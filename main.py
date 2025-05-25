@@ -1,142 +1,180 @@
-from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QMessageBox
+from PyQt6.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QLabel, QCheckBox, QPushButton,
+    QTextEdit, QScrollArea, QHBoxLayout, QFrame
+)
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont, QPalette, QColor
 from pyswip import Prolog
-from pyswip.easy import Functor
+import sys
 
-# This class is used to display the results of the diagnosis
-class ResultsDialog(QDialog):
-    def __init__(self, resultsText):
-        super().__init__()
-        uic.loadUi("results.ui", self)
-        self.results_text.setPlainText(resultsText)
-
-# This class is the main page of the application
-class MainPage(QDialog):
+class DiagnosisApp(QWidget):
     def __init__(self):
         super().__init__()
-        uic.loadUi("mainpage.ui", self)
+        self.setWindowTitle("Computer Diagnosis Expert System")
+        self.setGeometry(200, 100, 800, 600)
+
+        self.symptoms = [
+            "slow_performance", "strange_noises", "corrupted_files", "boot_failure", "disk_errors",
+            "frequent_crashes", "blue_screen", "random_restarts", "freezing", "memory_errors",
+            "random_shutdowns", "system_freezes", "fans_running_loudly", "sluggish_performance", "hot_exterior",
+            "failure_to_power_on", "system_shutdowns", "clicking_noises", "burning_smell",
+            "pop_ups", "browser_redirection", "disabled_security", "unknown_processes",
+            "device_malfunction", "device_not_recognized", "graphical_glitches", "audio_problems",
+            "failure_to_boot", "beep_codes", "missing_hardware", "settings_reset", "incorrect_date_time",
+            "intermittent_connectivity", "no_internet_access", "network_not_detected", "slow_connection", "driver_errors",
+            "flickering_screen", "no_display", "distorted_colors", "dead_pixels", "vertical_lines",
+            "unresponsive_keys", "stuck_keys", "ghost_typing", "delayed_response", "keyboard_not_detected",
+            "display_artifacts", "screen_freezing", "display_driver_crashes", "blank_screen_with_system_running",
+            "graphics_stuttering", "game_crashes", "gpu_fan_running_loudly", "performance_degradation_in_graphics", "display_corruption_under_load",
+            "display_flickering", "color_distortion", "application_crashes_with_graphics", "black_screen_after_driver_update", "poor_3d_performance"
+        ]
 
         self.prolog = Prolog()
         self.prolog.consult("info.pl")
 
-        self.confirm_button.clicked.connect(self.run_diagnosis)
+        self.initUI()
+        self.setStyleSheet(self.loadStyles())
 
-        # All Checkboxes Available
-        self.symptom_checkboxes = [
-            self.blue_screen,
-            self.random_restarts,
-            self.random_shutdowns,
-            self.unknown_processes,
-            self.device_not_recognized,
-            self.settings_reset,
-            self.driver_errors,
-            self.black_screen_after_driver_update,
-            self.display_driver_crashes,
-            self.blank_screen_with_system_running,
-            self.disabled_security,
-            self.pop_ups,
-            self.slow_performance,
-            self.boot_failure,
-            self.incorrect_date_time,
-            self.beep_codes,
-            self.strange_noises,
-            self.hot_exterior,
-            self.clicking_noises,
-            self.audio_problems,
-            self.missing_hardware,
-            self.gpu_fan_running_loudly,
-            self.memory_errors,
-            self.device_malfunction,
-            self.disk_errors,
-            self.corrupted_files,
-            self.display_artifacts,
-            self.graphical_glitches,
-            self.flickering_screen,
-            self.no_display,
-            self.distorted_colors,
-            self.dead_pixels,
-            self.vertical_lines,
-            self.intermittent_connectivity,
-            self.no_internet_access,
-            self.network_not_detected,
-            self.slow_connection,
-            self.browser_redirection,
-            self.unresponsive_keys,
-            self.stuck_keys,
-            self.ghost_typing,
-            self.delayed_response,
-            self.keyboard_not_detected,
-            self.freezing,
-            self.frequent_crashes,
-            self.poor_3d_performance,
-            self.application_crashes_with_graphics,
-            self.game_crashes
-        ]
-            # self.system_freezes,
-            # self.fans_running_loudly,
-            # self.sluggish_performance,
-            # self.failure_to_power_on,
-            # self.system_shutdowns,
-            # self.burning_smell,
-            # self.failure_to_boot,
-            # self.screen_freezing,
-            # self.graphics_stuttering,
-            # self.performance_degradation_in_graphics,
-            # self.display_corruption_under_load,
-            # self.display_flickering,
-            # self.color_distortion,
+    def initUI(self):
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(10)
 
-    
-        
-    # Get the checked symptoms and add them to checked list
-    def get_checked_symptoms(self):
-        checked = []
-        for cb in self.symptom_checkboxes:
-            if cb.isChecked():
-                symptom = cb.text().lower().replace(" ", "_")
-                checked.append(symptom)
-        return checked
+        title = QLabel("💻 Computer Diagnosis Expert System")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
+        main_layout.addWidget(title)
 
-    # Run the diagnosis based on the selected symptoms (Prolog query)
-    def run_diagnosis(self):
-        selected = self.get_checked_symptoms()
+        instruction = QLabel("✔️ Select observed symptoms:")
+        instruction.setFont(QFont("Segoe UI", 12))
+        main_layout.addWidget(instruction)
 
-        # Check if at least five symptoms are selected  ?? (or should i make it only one?)
-        if len(selected) < 5:
-            QMessageBox.warning(self, "Not Enough Symptoms Selected", "Please select at least five symptom.")
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+
+        symptom_container = QWidget()
+        symptom_layout = QVBoxLayout(symptom_container)
+        symptom_layout.setSpacing(5)
+
+        self.checkboxes = []
+        for symptom in self.symptoms:
+            cb = QCheckBox(symptom.replace("_", " ").capitalize())
+            cb.setObjectName(symptom)
+            cb.setFont(QFont("Segoe UI", 10))
+            cb.setStyleSheet("padding: 5px;")
+            self.checkboxes.append(cb)
+            symptom_layout.addWidget(cb)
+
+        scroll.setWidget(symptom_container)
+        main_layout.addWidget(scroll, stretch=2)
+
+        # Button row (Diagnose + Reset)
+        button_layout = QHBoxLayout()
+        diagnose_btn = QPushButton("Diagnose")
+        diagnose_btn.clicked.connect(self.diagnose)
+
+        reset_btn = QPushButton("Reset")
+        reset_btn.clicked.connect(self.reset)
+
+        button_layout.addWidget(diagnose_btn)
+        button_layout.addWidget(reset_btn)
+        main_layout.addLayout(button_layout)
+
+        # Results
+        main_layout.addWidget(QLabel("📋 Diagnosis Results:"))
+        self.result_box = QTextEdit()
+        self.result_box.setReadOnly(True)
+        self.result_box.setFont(QFont("Consolas", 10))
+        main_layout.addWidget(self.result_box, stretch=1)
+
+        self.setLayout(main_layout)
+
+    def diagnose(self):
+        selected = [cb.objectName() for cb in self.checkboxes if cb.isChecked()]
+        if not selected:
+            self.result_box.setText("⚠️ Please select at least one symptom.")
             return
 
-        symptom_list_str = "[" + ",".join(selected) + "]"
-        query = f"diagnose_all({symptom_list_str}, Results)."
+        self.result_box.setText("🔎 Diagnosing...\n")
+        query = f"diagnose_all([{','.join(selected)}], Results)."
 
         try:
-            result = list(self.prolog.query(query))
-            if not result:
-                results_text = "No matching issue found."
-            else:
-                results = result[0]['Results']
-                # print("Prolog Results Raw:", results)
+            results = list(self.prolog.query(query))
+            if not results:
+                self.result_box.append("❌ No diagnosis found.")
+                return
 
-                results_text = ""
+            prolog_result = results[0]["Results"]
 
-                ##### Don't know how to aproach this yet #####
+            parsed_results = []
+            for item in prolog_result:
+                functor = str(item).strip()
+                if functor.startswith("issue(") and functor.endswith(")"):
+                    parts = functor[6:-1].split(",")
+                    if len(parts) == 2:
+                        issue = parts[0].strip()
+                        percentage = float(parts[1].strip())
+                        parsed_results.append((issue, percentage))
 
-                # for issue in results:
-                #     if hasattr(issue, 'args') and len(issue.args) == 2:
-                #         name = str(issue.args[0])
-                #         percentage = float(issue.args[1])
-                #         results_text += f"{name}: {percentage:.2f}% match\n"
-                #     else:
-                #         results_text += f"Unrecognized format: {issue}\n"
+            if not parsed_results:
+                self.result_box.append("❌ No matching issues found.")
+                return
 
-            # dialog = ResultsDialog(results_text)
-            # dialog.exec_()
+            parsed_results.sort(key=lambda x: x[1], reverse=True)
+            output = ""
+            for issue, percentage in parsed_results:
+                name = issue.replace("_", " ").capitalize()
+                output += f"✅ {name}: {percentage:.2f}% match\n"
+
+            self.result_box.setText(output)
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"An error occurred:\n{str(e)}")
+            self.result_box.setText(f"❌ Error during diagnosis:\n{str(e)}")
+
+    def reset(self):
+        self.result_box.clear()
+        for cb in self.checkboxes:
+            cb.setChecked(False)
+
+    def loadStyles(self):
+        return """
+            QWidget {
+                background-color: #2b2b2b;
+                color: #f0f0f0;
+                font-family: 'Segoe UI';
+            }
+            QCheckBox {
+                border-radius: 5px;
+            }
+            QPushButton {
+                background-color: #5c8aff;
+                color: white;
+                border-radius: 8px;
+                padding: 8px 16px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #3a6eea;
+            }
+            QTextEdit {
+                background-color: #1e1e1e;
+                border-radius: 8px;
+                padding: 10px;
+                border: 1px solid #444;
+            }
+            QLabel {
+                margin-bottom: 4px;
+            }
+            QScrollArea {
+                background-color: #2b2b2b;
+                border: 1px solid #444;
+                border-radius: 8px;
+            }
+        """
 
 if __name__ == "__main__":
-    app = QApplication([])
-    window = MainPage()
+    app = QApplication(sys.argv)
+    window = DiagnosisApp()
     window.show()
-    app.exec_()
+    sys.exit(app.exec())
